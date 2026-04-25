@@ -5,7 +5,7 @@ def embed_message(carrier_path, message_path, S, L, mode):
     P = BitArray(filename=carrier_path)
     M = BitArray(filename=message_path)
     
-    # Simple check for capacity
+    # Simple check for capacit
     if S + (len(M) * L) > len(P):
         raise ValueError("Carrier file is too small for this message/periodicity.")
 
