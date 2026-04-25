@@ -37,7 +37,7 @@ def index():
     return render_template('index.html', files=files)
 
 @app.route('/upload', methods=['GET', 'POST'])
-@login_required # Only authenticated users may submit [cite: 9, 21]
+
 def upload():
     if request.method == 'POST':
         p_file = request.files['carrier']
