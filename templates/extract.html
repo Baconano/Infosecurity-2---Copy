@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head><title>Extract Secret Message</title></head>
+<body>
+    <h2>Retrieve Hidden Message</h2>
+    <p>Upload the stego-file and provide the original parameters to extract the message.</p>
+    
+    <form method="POST" enctype="multipart/form-data">
+        <p>Stego File: <input type="file" name="carrier" required></p>
+        <p>Start Bit (S): <input type="number" name="S" value="1024"></p>
+        <p>Periodicity (L): <input type="number" name="L" value="8"></p>
+        <p>Length of Message (in bits): <input type="number" name="bits" placeholder="e.g. 500" required></p>
+        <button type="submit">Extract and Download</button>
+    </form>
+    <br><a href="{{ url_for('index') }}">Back to Gallery</a>
+</body>
+</html>
