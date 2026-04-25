@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>StegoSite - Public Postings</title>
+    <style>
+        body { font-family: sans-serif; margin: 40px; background-color: #f4f4f9; }
+        .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+        .item { background: white; padding: 10px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center; }
+        img { max-width: 100%; height: auto; border-radius: 4px; }
+        nav { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Steganography Gallery</h1>
+    <nav>
+        {% if current_user.is_authenticated %}
+            <span>Logged in as: {{ current_user.username }}</span> | 
+            <a href="{{ url_for('upload') }}">Upload/Hide</a> | 
+            <a href="{{ url_for('logout') }}">Logout</a>
+        {% else %}
+            <a href="{{ url_for('login') }}">Login</a> | 
+            <a href="{{ url_for('register') }}">Register</a>
+        {% endif %}
+        | <a href="{{ url_for('extract') }}">Decode a File</a>
+    </nav>
+
+    <div class="gallery">
+        {% for file in files %}
+            <div class="item">
+                <img src="{{ url_for('static', filename='uploads/' + file) }}">
+                <p>{{ file }}</p>
+                <a href="{{ url_for('static', filename='uploads/' + file) }}" download>Download</a>
+            </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
