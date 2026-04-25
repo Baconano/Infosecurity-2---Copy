@@ -1,15 +1,20 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, send_file
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
-# Import the logic functions from step 1 here
+
+# Importing the logic functions from your stego_logic.py
+from stego_logic import embed_message, extract_message
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///instance/users.db'
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
+
+# Ensure the upload folder exists
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
@@ -26,36 +31,65 @@ def load_user(user_id):
 
 @app.route('/')
 def index():
-    # Publicly accessible feed
+    # Publicly accessible feed [cite: 9, 21]
     files = os.listdir(app.config['UPLOAD_FOLDER'])
     return render_template('index.html', files=files)
 
 @app.route('/upload', methods=['GET', 'POST'])
-@login_required
+@login_required # Only authenticated users may submit [cite: 9, 21]
 def upload():
     if request.method == 'POST':
         p_file = request.files['carrier']
         m_file = request.files['message']
-        s = int(request.form['S'])
-        l = int(request.form['L'])
+        s = int(request.form.get('S', 1024)) # Starting bit [cite: 11]
+        l = int(request.form.get('L', 8))    # Periodicity [cite: 11]
         
-        p_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(p_file.filename))
-        m_path = os.path.join('/tmp', secure_filename(m_file.filename)) # Temporary
+        p_filename = secure_filename(p_file.filename)
+        p_path = os.path.join(app.config['UPLOAD_FOLDER'], p_filename)
+        
+        # Save message to a temporary location to process it
+        m_filename = secure_filename(m_file.filename)
+        m_path = os.path.join('/tmp', m_filename) if os.name != 'nt' else os.path.join(os.getenv('TEMP'), m_filename)
         
         p_file.save(p_path)
         m_file.save(m_path)
         
-        # Apply steganography
         try:
+            # Apply steganography logic [cite: 13, 15]
             result_bits = embed_message(p_path, m_path, s, l, "default")
             with open(p_path, 'wb') as f:
                 result_bits.tofile(f)
-            flash("Message hidden successfully!")
+            flash(f"Message hidden in {p_filename} successfully!")
         except Exception as e:
-            flash(f"Error: {str(e)}")
+            flash(f"Error during embedding: {str(e)}")
             
         return redirect(url_for('index'))
     return render_template('upload.html')
+
+@app.route('/extract', methods=['GET', 'POST'])
+def extract():
+    # Reversibility: retrieving the original message 
+    if request.method == 'POST':
+        p_file = request.files['carrier']
+        s = int(request.form.get('S', 1024))
+        l = int(request.form.get('L', 8))
+        # You need the length of the original message in bits to extract it correctly
+        length_bits = int(request.form.get('bits', 0)) 
+        
+        p_filename = secure_filename(p_file.filename)
+        p_path = os.path.join('/tmp', p_filename) if os.name != 'nt' else os.path.join(os.getenv('TEMP'), p_filename)
+        p_file.save(p_path)
+        
+        try:
+            extracted_bits = extract_message(p_path, s, l, length_bits)
+            output_path = os.path.join('/tmp', 'extracted_msg') if os.name != 'nt' else os.path.join(os.getenv('TEMP'), 'extracted_msg')
+            with open(output_path, 'wb') as f:
+                extracted_bits.tofile(f)
+            return send_file(output_path, as_attachment=True, download_name="extracted_message")
+        except Exception as e:
+            flash(f"Extraction failed: {str(e)}")
+            
+    return render_template('extract.html') # Ensure you create this template
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
