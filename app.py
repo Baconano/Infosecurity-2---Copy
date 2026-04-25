@@ -69,28 +69,32 @@ def upload():
 
 @app.route('/extract', methods=['GET', 'POST'])
 def extract():
-    # Reversibility: retrieving the original message 
     if request.method == 'POST':
         p_file = request.files['carrier']
         s = int(request.form.get('S', 1024))
         l = int(request.form.get('L', 8))
-        # You need the length of the original message in bits to extract it correctly
-        length_bits = int(request.form.get('bits', 0)) 
+        bit_len = int(request.form.get('bits', 0))
+        # Add a field to get the original extension from the user
+        extension = request.form.get('extension', '.txt') 
         
-        p_filename = secure_filename(p_file.filename)
-        p_path = os.path.join('/tmp', p_filename) if os.name != 'nt' else os.path.join(os.getenv('TEMP'), p_filename)
+        temp_dir = os.environ.get('TEMP') if os.name == 'nt' else '/tmp'
+        p_path = os.path.join(temp_dir, secure_filename(p_file.filename))
         p_file.save(p_path)
         
         try:
-            extracted_bits = extract_message(p_path, s, l, length_bits)
-            output_path = os.path.join('/tmp', 'extracted_msg') if os.name != 'nt' else os.path.join(os.getenv('TEMP'), 'extracted_msg')
-            with open(output_path, 'wb') as f:
+            extracted_bits = extract_message(p_path, s, l, bit_len)
+            # Use the extension in the download name
+            out_filename = f"extracted_message{extension}"
+            out_path = os.path.join(temp_dir, out_filename)
+            
+            with open(out_path, 'wb') as f:
                 extracted_bits.tofile(f)
-            return send_file(output_path, as_attachment=True, download_name="extracted_message")
+                
+            return send_file(out_path, as_attachment=True, download_name=out_filename)
         except Exception as e:
             flash(f"Extraction failed: {str(e)}")
             
-    return render_template('extract.html') # Ensure you create this template
+    return render_template('extract.html')
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
