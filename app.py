@@ -5,7 +5,7 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 
-# Importing the logic functions from your stego_logic.py
+# Importing the logic functions from your stego_logic.p
 from stego_logic import embed_message, extract_message
 
 
